@@ -24,6 +24,9 @@
     dropIndex: 0,
     elapsed: 0,
     resolved: false,
+    interrompu: false,
+    wasFullscreen: false,
+    armed: false,          // anti-triche actif seulement apres le 1er geste
     startTime: Date.now(),
     deployments: 0,
     testsExecuted: 0,
@@ -314,8 +317,16 @@
       var req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
       if (req) { try { req.call(el); } catch (e) { /* ignore */ } }
     }
-    document.addEventListener('pointerdown', goFullscreen, { once: true });
-    document.addEventListener('keydown', goFullscreen, { once: true });
+    // Le 1er geste du joueur passe en plein ecran ET arme l'anti-triche :
+    // tant qu'il n'a pas commence, quitter la fenetre n'interrompt rien (sinon
+    // un onglet ouvert en arriere-plan se couperait tout seul).
+    function demarrer() {
+      goFullscreen();
+      // petit delai : le geste de demarrage ne doit pas s'auto-interrompre.
+      setTimeout(function () { state.armed = true; }, 400);
+    }
+    document.addEventListener('pointerdown', demarrer, { once: true });
+    document.addEventListener('keydown', demarrer, { once: true });
 
     var inFlag = function (t) { return !!(t && t.closest && t.closest('.flag-block')); };
     document.addEventListener('copy', function (e) { if (!inFlag(e.target)) e.preventDefault(); });
@@ -326,6 +337,29 @@
       var k = e.key.toLowerCase();
       if ((k === 'c' || k === 'x') && !inFlag(document.activeElement)) e.preventDefault();
     }, true);
+
+    // 4) Anti-triche / immersion : quitter la fenetre (changer d'onglet,
+    //    reduire, passer a une autre application) ou sortir du plein ecran
+    //    avant la fin interrompt la partie.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) interrompre();
+    });
+    window.addEventListener('blur', interrompre);
+    document.addEventListener('fullscreenchange', function () {
+      if (document.fullscreenElement) state.wasFullscreen = true;
+      else if (state.wasFullscreen) interrompre();
+    });
+  }
+
+  // Termine la partie quand le joueur quitte la fenetre avant d'avoir fini.
+  function interrompre() {
+    if (!state.armed || state.resolved || state.interrompu) return;
+    state.interrompu = true;
+    $('#btnTests').disabled = true;
+    $('#btnDeploy').disabled = true;
+    try { if (state.editor && state.editor.updateOptions) state.editor.updateOptions({ readOnly: true }); } catch (e) {}
+    if (state.fallbackEl) state.fallbackEl.readOnly = true;
+    $('#interruptOverlay').hidden = false;
   }
 
   // --------------------------------------------------------------- Editeur
@@ -366,6 +400,7 @@
     $('#btnTests').addEventListener('click', runTests);
     $('#btnDeploy').addEventListener('click', deploy);
     $('#deployClose').addEventListener('click', function () { $('#deployOverlay').hidden = true; });
+    $('#restartBtn').addEventListener('click', function () { location.reload(); });
     $('#copyFlag').addEventListener('click', async function () {
       try { await navigator.clipboard.writeText($('#flagValue').textContent); $('#copyFlag').textContent = 'Copie !'; }
       catch (e) { /* copie manuelle possible */ }

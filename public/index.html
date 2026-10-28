@@ -135,6 +135,20 @@
     </div>
   </div>
 
+  <!-- ======================= OVERLAY PARTIE INTERROMPUE ======================= -->
+  <div class="overlay" id="interruptOverlay" hidden>
+    <div class="win-box" style="border-color: var(--crit);">
+      <div class="win-badge" style="color: var(--crit);">PARTIE INTERROMPUE</div>
+      <h1 class="win-title">Vous avez quitte la fenetre</h1>
+      <p class="win-note">
+        Le challenge se fait en une seule session, en plein ecran, sans quitter la
+        fenetre ni changer d'onglet. La partie est terminee. Rechargez pour
+        recommencer une nouvelle session.
+      </p>
+      <button class="btn btn-primary" id="restartBtn" style="margin-top: 10px;">Recommencer</button>
+    </div>
+  </div>
+
   <!-- Monaco via CDN, avec repli textarea hors-ligne (voir app.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
   <script src="app.js"></script>
