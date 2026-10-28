@@ -25,6 +25,7 @@
     elapsed: 0,
     resolved: false,
     interrompu: false,
+    perdu: false,
     wasFullscreen: false,
     armed: false,          // anti-triche actif seulement apres le 1er geste
     startTime: Date.now(),
@@ -284,7 +285,7 @@
     monLog('info', 'pager: ingenieur d astreinte alerte pour l incident retraits');
 
     setInterval(function () {
-      if (state.resolved) return;
+      if (stopped()) return;
       state.elapsed += 1;
       var next = state.schedule[state.dropIndex];
       if (next && state.elapsed >= next.t) {
@@ -294,15 +295,15 @@
         el.textContent = fmt(state.customers);
         el.classList.remove('drop'); void el.offsetWidth; el.classList.add('drop');
         monLog('alert', 'clients=' + fmt(state.customers) + ' delta=-' + fmt(delta) + ' service=withdrawals');
-        if (state.customers === 0) monLog('alert', 'base clients epuisee - incident non resolu');
         state.dropIndex += 1;
         next = state.schedule[state.dropIndex];
+        if (state.customers === 0) { gameOver(); return; }
       }
       $('#nextDrop').textContent = next ? Math.max(0, next.t - state.elapsed) : '--';
     }, 1000);
 
     setInterval(function () {
-      if (state.resolved) return;
+      if (stopped()) return;
       var c = COMPLAINTS[complaintIdx % COMPLAINTS.length]; complaintIdx += 1;
       monLog('info', c);
     }, 5200);
@@ -351,15 +352,32 @@
     });
   }
 
-  // Termine la partie quand le joueur quitte la fenetre avant d'avoir fini.
-  function interrompre() {
-    if (!state.armed || state.resolved || state.interrompu) return;
-    state.interrompu = true;
+  // Partie terminee (gagnee, perdue ou interrompue) : plus rien ne tourne.
+  function stopped() { return state.resolved || state.perdu || state.interrompu; }
+
+  function verrouiller() {
     $('#btnTests').disabled = true;
     $('#btnDeploy').disabled = true;
     try { if (state.editor && state.editor.updateOptions) state.editor.updateOptions({ readOnly: true }); } catch (e) {}
     if (state.fallbackEl) state.fallbackEl.readOnly = true;
+  }
+
+  // Termine la partie quand le joueur quitte la fenetre avant d'avoir fini.
+  function interrompre() {
+    if (!state.armed || stopped()) return;
+    state.interrompu = true;
+    verrouiller();
     $('#interruptOverlay').hidden = false;
+  }
+
+  // Echec : la banque a perdu tous ses clients avant la resolution.
+  function gameOver() {
+    if (stopped()) return;
+    state.perdu = true;
+    $('#monStatus').textContent = 'state: DOWN';
+    monLog('alert', 'base clients epuisee - incident non resolu, service perdu');
+    verrouiller();
+    $('#gameoverOverlay').hidden = false;
   }
 
   // --------------------------------------------------------------- Editeur
@@ -401,6 +419,7 @@
     $('#btnDeploy').addEventListener('click', deploy);
     $('#deployClose').addEventListener('click', function () { $('#deployOverlay').hidden = true; });
     $('#restartBtn').addEventListener('click', function () { location.reload(); });
+    $('#restartBtn3').addEventListener('click', function () { location.reload(); });
     $('#copyFlag').addEventListener('click', async function () {
       try { await navigator.clipboard.writeText($('#flagValue').textContent); $('#copyFlag').textContent = 'Copie !'; }
       catch (e) { /* copie manuelle possible */ }
