@@ -189,8 +189,14 @@ def run_withdrawal(code, balance, amount):
 
 
 def make_flag(player_id):
-    """Flag unique et deterministe par joueur (secret cote serveur uniquement)."""
-    secret = os.environ.get("CHALLENGE_SECRET", "nova-bank-dev-secret-change-me")
+    """Flag unique et deterministe par joueur (secret cote serveur uniquement).
+
+    On lit en priorite FLAG_SECRET (le secret partage par tous les challenges et
+    par EsaticShare), avec repli sur CHALLENGE_SECRET pour compatibilite.
+    """
+    secret = (os.environ.get("FLAG_SECRET")
+              or os.environ.get("CHALLENGE_SECRET")
+              or "nova-bank-dev-secret-change-me")
     pid = str(player_id or "anonymous")[:128]
     digest = hmac.new(secret.encode("utf-8"), ("nova-bank|" + pid).encode("utf-8"),
                       hashlib.sha256).hexdigest()

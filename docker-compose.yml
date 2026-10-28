@@ -5,9 +5,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Secret serveur utilise pour deriver le flag unique par joueur.
-      # A CHANGER avant tout evenement reel.
-      CHALLENGE_SECRET: "change-moi-avant-la-competition"
+      # Secret partage par tous les challenges et par EsaticShare, utilise pour
+      # deriver le flag unique par joueur. Doit valoir EXACTEMENT la meme chose
+      # que FLAG_SECRET cote EsaticShare. A CHANGER avant tout evenement reel.
+      FLAG_SECRET: "change-moi-avant-la-competition"
       PORT: "8080"
       PYTHONDONTWRITEBYTECODE: "1"
     restart: unless-stopped

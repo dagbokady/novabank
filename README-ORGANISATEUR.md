@@ -151,22 +151,22 @@ ESATICSHARE{nova_bank_saved_<hmac12>}
 ```
 
 `<hmac12>` = 12 premiers hex de
-`HMAC-SHA256(CHALLENGE_SECRET, "nova-bank|" + playerId)`.
+`HMAC-SHA256(FLAG_SECRET, "nova-bank|" + playerId)`.
 
-- `CHALLENGE_SECRET` : **variable d'environnement serveur**, jamais envoyée au
+- `FLAG_SECRET` : **variable d'environnement serveur**, jamais envoyée au
   navigateur (défaut `nova-bank-dev-secret-change-me` en dev).
 - `playerId` : identifiant anonyme généré côté client (localStorage).
 - Le flag **n'apparaît jamais** côté client (HTML, JS, commentaires, source
   maps, fichiers statiques). Seul `/api/deploy` le renvoie, après correctif
   valide. Le code Python du joueur n'a pas accès au secret.
 
-**Avant un événement réel** : définir un `CHALLENGE_SECRET` long et secret
+**Avant un événement réel** : définir un `FLAG_SECRET` long et secret
 (Docker : `docker-compose.yml` ; Vercel : *Settings → Environment Variables*).
 
 **Vérifier un flag soumis** (script organisateur) :
 
 ```bash
-CHALLENGE_SECRET=... python3 -c 'import hmac,hashlib,os,sys;s=os.environ["CHALLENGE_SECRET"];i=sys.argv[1];print("ESATICSHARE{nova_bank_saved_"+hmac.new(s.encode(),("nova-bank|"+i).encode(),hashlib.sha256).hexdigest()[:12]+"}")' <playerId>
+FLAG_SECRET=... python3 -c 'import hmac,hashlib,os,sys;s=os.environ["FLAG_SECRET"];i=sys.argv[1];print("ESATICSHARE{nova_bank_saved_"+hmac.new(s.encode(),("nova-bank|"+i).encode(),hashlib.sha256).hexdigest()[:12]+"}")' <playerId>
 ```
 
 ---
@@ -240,7 +240,7 @@ Dockerfile, docker-compose.yml, vercel.json, requirements.txt
 Zéro configuration : `public/` sert le front, `api/*.py` deviennent des
 fonctions serverless Python (bibliothèque standard uniquement ; `vercel.json`
 inclut `lib/` dans le bundle). Importer le dépôt dans Vercel, définir
-`CHALLENGE_SECRET`, déployer.
+`FLAG_SECRET`, déployer.
 
 ```bash
 vercel        # ou: vercel --prod
