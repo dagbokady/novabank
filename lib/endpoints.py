@@ -28,6 +28,7 @@ def deploy(body):
     """POST /api/deploy  { code, playerId, stats } -> flag si le correctif passe."""
     code = body.get("code") if isinstance(body.get("code"), str) else ""
     player_id = body.get("playerId") if isinstance(body.get("playerId"), str) else ""
+    token = body.get("p") if isinstance(body.get("p"), str) else None
     stats = body.get("stats") if isinstance(body.get("stats"), dict) else {}
 
     result = run_tests(code)
@@ -45,7 +46,7 @@ def deploy(body):
         "tests": result["tests"],
         "passed": result["passed"],
         "failed": result["failed"],
-        "flag": make_flag(player_id),
+        "flag": make_flag(player_id, token=token),
         "stats": {
             "customersRemaining": _as_int(stats.get("customersRemaining")),
             "incidentDuration": (stats.get("incidentDuration")[:12]

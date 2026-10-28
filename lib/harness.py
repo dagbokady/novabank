@@ -28,6 +28,7 @@ privilegie, un filesystem en lecture seule, l'absence de reseau et des limites
 CPU/memoire. Le secret du flag n'est jamais injecte dans l'espace d'execution.
 """
 
+import base64
 import builtins as _builtins
 import hashlib
 import hmac
@@ -188,16 +189,49 @@ def run_withdrawal(code, balance, amount):
     }
 
 
-def make_flag(player_id):
-    """Flag unique et deterministe par joueur (secret cote serveur uniquement).
+# Prefixe du flag de CETTE epreuve. Doit valoir EXACTEMENT le meme prefixe que
+# celui declare pour l'epreuve cote EsaticShare (admin). Reglable par env.
+FLAG_PREFIX = os.environ.get("FLAG_PREFIX", "nova_")
 
-    On lit en priorite FLAG_SECRET (le secret partage par tous les challenges et
-    par EsaticShare), avec repli sur CHALLENGE_SECRET pour compatibilite.
+
+def _secret_bytes():
+    """Secret partage avec EsaticShare. FLAG_SECRET en priorite (meme valeur des
+    deux cotes), repli sur CHALLENGE_SECRET pour compatibilite."""
+    return (os.environ.get("FLAG_SECRET")
+            or os.environ.get("CHALLENGE_SECRET")
+            or "nova-bank-dev-secret-change-me").encode("utf-8")
+
+
+def uid_from_token(token):
+    """Decode le token EsaticShare `<b64url(uid)>.<sig>` et verifie la signature
+    avec le secret partage. Renvoie l'uid si le token est valide, sinon None."""
+    try:
+        b64, sig = str(token).split(".", 1)
+    except (ValueError, AttributeError):
+        return None
+    pad = "=" * (-len(b64) % 4)
+    try:
+        uid = base64.urlsafe_b64decode(b64 + pad).decode("utf-8")
+    except Exception:
+        return None
+    attendu = hmac.new(_secret_bytes(), uid.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+    return uid if hmac.compare_digest(sig, attendu) else None
+
+
+def make_flag(player_ref, token=None):
+    """Flag unique par joueur, COMPATIBLE EsaticShare.
+
+    Schema identique a `ctf_service.flag_attendu` d'EsaticShare :
+        ESATICSHARE{<FLAG_PREFIX> + HMAC(FLAG_SECRET, "flag:"+uid)[:12]}
+
+    Si `token` (le `?p=` du lien EsaticShare) est valide, l'uid en est extrait
+    et le flag validera dans EsaticShare. Sinon on retombe sur `player_ref`
+    (identifiant local) : le flag reste unique mais n'est pas rattache a un
+    compte EsaticShare (mode autonome).
     """
-    secret = (os.environ.get("FLAG_SECRET")
-              or os.environ.get("CHALLENGE_SECRET")
-              or "nova-bank-dev-secret-change-me")
-    pid = str(player_id or "anonymous")[:128]
-    digest = hmac.new(secret.encode("utf-8"), ("nova-bank|" + pid).encode("utf-8"),
-                      hashlib.sha256).hexdigest()
-    return "ESATICSHARE{nova_bank_saved_" + digest[:12] + "}"
+    uid = uid_from_token(token) if token else None
+    if uid is None:
+        uid = str(player_ref or "anonymous")[:128]
+    corps = hmac.new(_secret_bytes(), ("flag:" + uid).encode("utf-8"),
+                     hashlib.sha256).hexdigest()[:12]
+    return "ESATICSHARE{" + FLAG_PREFIX + corps + "}"

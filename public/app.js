@@ -13,6 +13,9 @@
   // --------------------------------------------------------------- Etat
   var state = {
     playerId: ensurePlayerId(),
+    // Token EsaticShare present dans le lien `?p=...` (si le joueur vient de la
+    // plateforme). Permet de delivrer un flag rattache a son compte.
+    token: new URLSearchParams(location.search).get('p') || null,
     editor: null,
     fallbackEl: null,
     bankBalance: 0,
@@ -159,7 +162,7 @@
 
     var apiPromise = fetch('/api/deploy', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: getCode(), playerId: state.playerId, stats: liveStats() }),
+      body: JSON.stringify({ code: getCode(), playerId: state.playerId, p: state.token, stats: liveStats() }),
     }).then(function (r) { return r.json(); }).catch(function () { return { success: false }; });
 
     await deployStep(log, 'building image...');
