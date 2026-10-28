@@ -1,0 +1,2 @@
+# NOVA BANK n utilise que la bibliotheque standard Python.
+# Ce fichier signale a Vercel un projet Python (aucune dependance a installer).

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NOVA BANK — Console d'incident</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏦</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="layout">
+    <!-- ======================= PANNEAU GAUCHE : EDITEUR ======================= -->
+    <section class="pane pane-editor">
+      <div class="pane-head">
+        <div class="tabs">
+          <span class="tab tab-active">withdraw.py</span>
+          <span class="tab tab-muted">accounts.py</span>
+          <span class="tab tab-muted">server.py</span>
+        </div>
+        <div class="save-state" id="saveState" data-state="saved">changes saved</div>
+      </div>
+
+      <div id="editor" class="editor-host"></div>
+
+      <div class="editor-actions">
+        <div class="console" id="console" aria-live="polite">
+          <div class="console-line console-muted">$ pytest withdrawal_service — lancez les tests pour evaluer le correctif.</div>
+        </div>
+        <div class="buttons">
+          <button class="btn btn-ghost" id="btnTests">run tests</button>
+          <button class="btn btn-primary" id="btnDeploy">push to production</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= COLONNE DROITE ======================= -->
+    <div class="right-col">
+      <!-- APPLICATION BANCAIRE (style annees 2000) -->
+      <section class="pane pane-bank">
+        <div class="bank2003" id="bankApp">
+          <div class="b-titlebar">
+            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+              <td class="b-logo">&#127974; NOVA BANK <span>Online Banking</span></td>
+              <td class="b-titleright">Agence en ligne &nbsp;|&nbsp; Deconnexion</td>
+            </tr></table>
+          </div>
+          <div class="b-menubar">
+            Comptes &nbsp;&middot;&nbsp; Virements &nbsp;&middot;&nbsp; Retraits &nbsp;&middot;&nbsp; Historique &nbsp;&middot;&nbsp; Aide
+          </div>
+          <table class="b-main" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td class="b-side" valign="top">
+              <div class="b-sidehead">Espace client</div>
+              <ul>
+                <li>&#8250; Tableau de bord</li>
+                <li>&#8250; Mes comptes</li>
+                <li class="b-sel">&#8250; Retrait express</li>
+                <li>&#8250; Beneficiaires</li>
+                <li>&#8250; Messagerie</li>
+              </ul>
+              <div class="b-promo">Nouveau : epargne NOVA+ a 3,25% !</div>
+            </td>
+            <td class="b-content" valign="top">
+              <div class="b-welcome">Bonjour, <b>Alex Kouassi</b> &mdash; derniere connexion le 12/03/2003</div>
+              <table class="b-accounts" width="100%" cellpadding="0" cellspacing="0">
+                <tr class="b-ahead"><td>Compte</td><td>Numero</td><td align="right">Solde disponible</td></tr>
+                <tr><td>Compte courant</td><td>NB-0042-118-07</td><td align="right" class="b-bal" id="balance">$0.00</td></tr>
+                <tr><td>Livret epargne</td><td>NB-0042-551-21</td><td align="right">$11,920.40</td></tr>
+              </table>
+
+              <div class="b-box">
+                <div class="b-boxhead">Retrait express</div>
+                <table cellpadding="4" cellspacing="0"><tr>
+                  <td>Depuis&nbsp;:</td>
+                  <td>Compte courant (NB-0042-118-07)</td>
+                </tr><tr>
+                  <td>Montant&nbsp;:</td>
+                  <td>$ <input id="amount" type="text" value="0" size="8" autocomplete="off"></td>
+                </tr><tr>
+                  <td></td>
+                  <td><input type="button" id="withdraw-btn" class="b-btn" value="Retirer"></td>
+                </tr></table>
+                <div class="b-msg" id="message">&nbsp;</div>
+              </div>
+            </td>
+          </tr></table>
+          <div class="b-footer">
+            &copy; 2003 NOVA BANK S.A. &mdash; Tous droits reserves. Site optimise pour 1024&times;768.
+            <span class="b-secure">&#128274; Connexion securisee SSL 128 bits</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONITORING / INCIDENT (console brute) -->
+      <section class="pane pane-incident">
+        <div class="mon-head">
+          <span>withdrawal-service — monitoring</span>
+          <span class="mon-status" id="monStatus">state: DOWN</span>
+        </div>
+        <div class="mon-stats">
+          <span>clients_restants=<b id="customerCount">100000</b></span>
+          <span>prochaine_chute=<b id="nextDrop">--</b>s</span>
+        </div>
+        <pre class="mon-log" id="feed"></pre>
+      </section>
+    </div>
+  </main>
+
+  <!-- ======================= OVERLAY DEPLOIEMENT ======================= -->
+  <div class="overlay" id="deployOverlay" hidden>
+    <div class="deploy-box">
+      <div class="deploy-title" id="deployTitle">$ deploy withdrawal-service</div>
+      <pre class="deploy-log" id="deployLog"></pre>
+      <button class="btn btn-ghost" id="deployClose" hidden>fermer</button>
+    </div>
+  </div>
+
+  <!-- ======================= OVERLAY MISSION COMPLETE ======================= -->
+  <div class="overlay overlay-win" id="winOverlay" hidden>
+    <div class="win-box">
+      <div class="win-badge">INCIDENT RESOLU</div>
+      <h1 class="win-title">NOVA BANK EST SAUVEE</h1>
+      <div class="win-stats">
+        <div><span class="win-num" id="winCustomers">0</span><span class="win-cap">clients restants</span></div>
+        <div><span class="win-num" id="winDuration">00:00</span><span class="win-cap">duree de l'incident</span></div>
+        <div><span class="win-num" id="winDeploys">0</span><span class="win-cap">deploiements</span></div>
+        <div><span class="win-num" id="winTests">0</span><span class="win-cap">tests executes</span></div>
+      </div>
+      <div class="flag-block">
+        <div class="flag-label">FLAG</div>
+        <code class="flag" id="flagValue">…</code>
+        <button class="btn btn-ghost btn-copy" id="copyFlag">Copier</button>
+      </div>
+      <p class="win-note">Collez ce flag dans la plateforme ESATICSHARE pour valider l'epreuve.</p>
+    </div>
+  </div>
+
+  <!-- Monaco via CDN, avec repli textarea hors-ligne (voir app.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Lancement : docker compose up --build  puis http://localhost:8080
+services:
+  novabank:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Secret serveur utilise pour deriver le flag unique par joueur.
+      # A CHANGER avant tout evenement reel.
+      CHALLENGE_SECRET: "change-moi-avant-la-competition"
+      PORT: "8080"
+      PYTHONDONTWRITEBYTECODE: "1"
+    restart: unless-stopped
+    # --- Durcissement du bac a sable d'execution ---
+    read_only: true            # filesystem en lecture seule
+    tmpfs:
+      - /tmp                    # seul /tmp est inscriptible (temporaire)
+    cap_drop:
+      - ALL                    # aucune capability Linux
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m            # memoire limitee
+    pids_limit: 128
+    cpus: "0.75"               # CPU limite
